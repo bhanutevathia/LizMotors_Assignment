@@ -1,0 +1,46 @@
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+
+# Set the base URL for scraping financial data 
+base_url = "https://finance.yahoo.com/quote/" 
+
+# Define the company name and ticker
+company_name = "Canoo"
+ticker = "GOEV"
+
+# Build the URL by adding ticker to base URL
+url = base_url + ticker
+
+# Send HTTP request to fetch the webpage content
+response = requests.get(url)
+
+# Create a BeautifulSoup object to parse content
+soup = BeautifulSoup(response.text, 'html.parser')
+
+financials = {}
+financials["Market Cap"] = soup.find("fin-streamer", {"class":"Fw(b) Fz(36px) Mb(-4px) D(ib)"}).text
+
+pe_ratio = soup.find("td", {"data-test":"PE_RATIO-value"})
+if pe_ratio:
+    financials["PE Ratio (TTM)"] = pe_ratio.text 
+else:
+    financials["PE Ratio (TTM)"] = "N/A"
+
+eps = soup.find("td", {"data-test":"EPS_RATIO-value"})  
+if eps:
+    financials["EPS (TTM)"] = eps.text
+else: 
+    financials["EPS (TTM)"] = "N/A"
+
+revenue = soup.find("td", {"data-test":"TOTAL_REVENUE-value"})  
+if revenue: 
+    financials["Revenue (TTM)"] = revenue.text
+else:
+    financials["Revenue (TTM)"] = "N/A"
+
+df = pd.DataFrame(list(financials.items()), columns = ['Metric', 'Value']) 
+df.to_csv("canoo_financials.csv", index=False)
+
+print("Financial metrics extracted and saved to CSV!")
+
